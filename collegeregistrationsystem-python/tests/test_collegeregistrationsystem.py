@@ -3,6 +3,7 @@ import unittest
 from src.collegeregistrationsystem import CollegeRegistrationSystem
 from src.coursealreadyexistsexception import CourseAlreadyExistsException
 from src.coursenotfoundexception import CourseNotFoundException
+from src.collegemembernotfoundexception import CollegeMemberNotFoundException
 
 from tests.constants import STUDENT_FIRST_ID
 from tests.constants import STUDENT_1_FIRSTNAME_VALID
@@ -64,12 +65,18 @@ class CollegeRegistrationSystemTest(unittest.TestCase):
         self.add_student_succeeds_helper()
 
     def test_get_college_member_succeeds(self):
-        # TODO
-        self.fail("Not implemented yet.")
+        student1 = self.add_student_succeeds_helper()
+        try:
+            found = self.college_registration_system.get_college_member(student1.get_id())
+            self.assertEqual(student1, found)
+        except CollegeMemberNotFoundException:
+            self.fail()
 
     def test_get_college_member_reports_collegemembernotfound(self):
-        # TODO
-        self.fail("Not implemented yet.")
+        # there are no college members yet
+        self.assertEqual(len(self.college_registration_system.get_college_member_listing()), 0)
+        with self.assertRaises(CollegeMemberNotFoundException):
+            self.college_registration_system.get_college_member(1)
 
     def test_add_course_violates_preconditions(self):
 		# Call the unit under test
@@ -200,17 +207,41 @@ class CollegeRegistrationSystemTest(unittest.TestCase):
         self.add_course_section_succeeds_helper()
 
     def test_enroll_returns_true(self):
-        # TODO
-        self.fail("Not implemented yet.")
+        student1 = self.add_student_succeeds_helper()
+        course_section1 = self.add_course_section_succeeds_helper()
+        result = self.college_registration_system.enroll(course_section1.get_course().get_id(), course_section1.get_section_number(), student1.get_id())
+        self.assertTrue(result)
+        enrolled_students = course_section1.get_enrolled_students_listing()
+        self.assertEqual(len(enrolled_students), 1)
+        self.assertEqual(enrolled_students[0], student1)
 	
     def test_enroll_returns_false(self):
-        # TODO
-        self.fail("Not implemented yet.")
+        student1 = self.add_student_succeeds_helper()
+        course_section1 = self.add_course_section_succeeds_helper()
+        # enroll student
+        result1 = self.college_registration_system.enroll(course_section1.get_course().get_id(), course_section1.get_section_number(), student1.get_id())
+        self.assertTrue(result1)
+        # try to enroll same student again - should return false
+        result2 = self.college_registration_system.enroll(course_section1.get_course().get_id(), course_section1.get_section_number(), student1.get_id())
+        self.assertFalse(result2)
+        enrolled_students = course_section1.get_enrolled_students_listing()
+        self.assertEqual(len(enrolled_students), 1)
             
     def test_drop_returns_true(self):
-        # TODO
-        self.fail("Not implemented yet.")
+        student1 = self.add_student_succeeds_helper()
+        course_section1 = self.add_course_section_succeeds_helper()
+        # enroll student first
+        self.college_registration_system.enroll(course_section1.get_course().get_id(), course_section1.get_section_number(), student1.get_id())
+        self.assertEqual(len(course_section1.get_enrolled_students_listing()), 1)
+        # now drop the student
+        result = self.college_registration_system.drop(course_section1.get_course().get_id(), course_section1.get_section_number(), student1.get_id())
+        self.assertTrue(result)
+        self.assertEqual(len(course_section1.get_enrolled_students_listing()), 0)
 
     def test_drop_returns_false(self):
-        # TODO
-        self.fail("Not implemented yet.")
+        student1 = self.add_student_succeeds_helper()
+        course_section1 = self.add_course_section_succeeds_helper()
+        # student not enrolled, try dropping them
+        result = self.college_registration_system.drop(course_section1.get_course().get_id(), course_section1.get_section_number(), student1.get_id())
+        self.assertFalse(result)
+        self.assertEqual(len(course_section1.get_enrolled_students_listing()), 0)
